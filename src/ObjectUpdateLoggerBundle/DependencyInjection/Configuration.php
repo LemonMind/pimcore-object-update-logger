@@ -15,6 +15,12 @@ class Configuration implements ConfigurationInterface
     public function getConfigTreeBuilder()
     {
         $treeBuilder = new TreeBuilder('lemonmind_object_update_logger');
+        $rootNode = $treeBuilder->getRootNode();
+        $rootNode
+            ->children()
+                ->scalarNode('classes_to_log')->end()
+                ->scalarNode('objects_to_log')->end()
+            ->end();
 
         return $treeBuilder;
     }
