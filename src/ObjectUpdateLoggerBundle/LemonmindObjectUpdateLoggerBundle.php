@@ -15,11 +15,4 @@ class LemonmindObjectUpdateLoggerBundle extends AbstractPimcoreBundle
     {
         return 'lemonmind/pimcore-object-update-logger';
     }
-
-    public function getJsPaths()
-    {
-        return [
-            '/bundles/lemonmindobjectupdatelogger/js/pimcore/startup.js',
-        ];
-    }
 }
