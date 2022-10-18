@@ -40,7 +40,7 @@ class ObjectUpdateListener
         }
     }
 
-    private function log(DataObject $object)
+    private function log(DataObject $object): void
     {
         $versions = $object->getVersions();
 
@@ -120,11 +120,12 @@ class ObjectUpdateListener
 
     private function localizedFields(
         DataObject\ClassDefinition\Data\Localizedfields $definition,
-        AbstractObject $currentObject,
-        AbstractObject $previousObject,
-        string $fieldName,
-        array $validLanguages
-    ): void {
+        AbstractObject                                  $currentObject,
+        AbstractObject                                  $previousObject,
+        string                                          $fieldName,
+        array                                           $validLanguages
+    ): void
+    {
         foreach ($validLanguages as $language) {
             foreach ($definition->getFieldDefinitions() as $lfd) {
                 $v1Container = $currentObject->getValueForFieldName($fieldName);
@@ -144,11 +145,12 @@ class ObjectUpdateListener
 
     private function objectBricks(
         DataObject\ClassDefinition\Data\Objectbricks $definition,
-        AbstractObject $currentObject,
-        AbstractObject $previousObject,
-        string $fieldName,
-        array $validLanguages
-    ): void {
+        AbstractObject                               $currentObject,
+        AbstractObject                               $previousObject,
+        string                                       $fieldName,
+        array                                        $validLanguages
+    ): void
+    {
         foreach ($definition->getAllowedTypes() as $asAllowedType) {
             $collectionDef = DataObject\Objectbrick\Definition::getByKey($asAllowedType);
 
@@ -234,11 +236,12 @@ class ObjectUpdateListener
 
     private function classificationStore(
         DataObject\ClassDefinition\Data\Classificationstore $definition,
-        AbstractObject $currentObject,
-        AbstractObject $previousObject,
-        string $fieldName,
-        array $validLanguages
-    ): void {
+        AbstractObject                                      $currentObject,
+        AbstractObject                                      $previousObject,
+        string                                              $fieldName,
+        array                                               $validLanguages
+    ): void
+    {
         $storeDataCurrent = $currentObject->getValueForFieldName($fieldName);
         $storeDataPrevious = $previousObject->getValueForFieldName($fieldName);
 
@@ -299,8 +302,9 @@ class ObjectUpdateListener
     private function fieldCollection(
         AbstractObject $currentObject,
         AbstractObject $previousObject,
-        string $fieldName,
-    ): void {
+        string         $fieldName,
+    ): void
+    {
         $currentFields = $currentObject->get($fieldName);
         $previousFields = $previousObject->get($fieldName);
 

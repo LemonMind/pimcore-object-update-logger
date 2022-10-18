@@ -12,7 +12,7 @@ class Configuration implements ConfigurationInterface
     /**
      * {@inheritdoc}
      */
-    public function getConfigTreeBuilder()
+    public function getConfigTreeBuilder(): TreeBuilder
     {
         $treeBuilder = new TreeBuilder('lemonmind_object_update_logger');
         $rootNode = $treeBuilder->getRootNode();
