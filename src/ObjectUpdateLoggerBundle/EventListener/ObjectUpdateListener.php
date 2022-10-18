@@ -27,6 +27,10 @@ class ObjectUpdateListener
                 $objectsToLog = $config['objectsToLog'];
                 $object = DataObject::getByPath($event->getObject());
 
+                if ($config['disableObjectLog']) {
+                    return;
+                }
+
                 if (null === $objectsToLog) {
                     $this->log($object);
                 } elseif (in_array($object->getClass()->getName(), $objectsToLog, true)) {
