@@ -1,0 +1,5 @@
+lemonmind_object_update_logger:
+    resource: "@LemonmindObjectUpdateLoggerBundle/Controller/"
+    type:     annotation
+    prefix:   /
+
