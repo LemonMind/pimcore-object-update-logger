@@ -8,3 +8,15 @@ services:
         resource: '../../Controller'
         public: true
         tags: ['controller.service_arguments']
+
+    lemonmind.event_listener.object_update_listener:
+        public: true
+        class: Lemonmind\ObjectUpdateLoggerBundle\EventListener\ObjectUpdateListener
+        tags:
+            - { name: kernel.event_listener, event: pimcore.dataobject.postUpdate, method: postUpdate }
+
+    lemonmind.event_listener.class_update_listener:
+        public: true
+        class: Lemonmind\ObjectUpdateLoggerBundle\EventListener\ClassUpdateListener
+        tags:
+            - { name: kernel.event_listener, event: pimcore.class.postUpdate, method: postUpdateClassDefinition }
