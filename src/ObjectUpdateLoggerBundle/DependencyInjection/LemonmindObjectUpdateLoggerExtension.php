@@ -21,6 +21,8 @@ class LemonmindObjectUpdateLoggerExtension extends Extension
 
         $lemonmindObjectUpdateLoggerConfig['classesToLog'] = null;
         $lemonmindObjectUpdateLoggerConfig['objectsToLog'] = null;
+        $lemonmindObjectUpdateLoggerConfig['disableClassLog'] = false;
+        $lemonmindObjectUpdateLoggerConfig['disableObjectLog'] = false;
 
         if (isset($config['classes_to_log'])) {
             $classes = explode(',', $config['classes_to_log']);
@@ -42,6 +44,14 @@ class LemonmindObjectUpdateLoggerExtension extends Extension
             }
 
             $lemonmindObjectUpdateLoggerConfig['objectsToLog'] = $arr;
+        }
+
+        if (isset($config['disable_class_log'])) {
+            $lemonmindObjectUpdateLoggerConfig['disableClassLog'] = $config['disable_class_log'];
+        }
+
+        if (isset($config['disable_object_log'])) {
+            $lemonmindObjectUpdateLoggerConfig['disableObjectLog'] = $config['disable_object_log'];
         }
 
         $container->setParameter('lemonmind_object_update_logger', $lemonmindObjectUpdateLoggerConfig);

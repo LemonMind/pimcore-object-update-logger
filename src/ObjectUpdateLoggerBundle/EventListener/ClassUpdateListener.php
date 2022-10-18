@@ -21,6 +21,10 @@ class ClassUpdateListener
                 $config = $container->getParameter('lemonmind_object_update_logger');
                 $classesToLog = $config['classesToLog'];
 
+                if ($config['disableClassLog']) {
+                    return;
+                }
+
                 if (null === $classesToLog) {
                     $this->log($event);
                 } elseif (in_array($event->getClassDefinition()->getName(), $classesToLog, true)) {
