@@ -4,11 +4,6 @@ services:
         autoconfigure: true
         public: false
 
-    Lemonmind\ObjectUpdateLoggerBundle\Controller\:
-        resource: '../../Controller'
-        public: true
-        tags: ['controller.service_arguments']
-
     lemonmind.event_listener.object_update_listener:
         public: true
         class: Lemonmind\ObjectUpdateLoggerBundle\EventListener\ObjectUpdateListener
