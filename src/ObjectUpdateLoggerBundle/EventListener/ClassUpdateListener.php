@@ -37,11 +37,18 @@ class ClassUpdateListener
     public function log(ClassDefinitionEvent $event): void
     {
         $classDefinition = $event->getClassDefinition();
-        $user = User::getById($classDefinition->getUserModification());
+        $user = null;
+
+        if (is_int($classDefinition->getUserModification())) {
+            $user = User::getById($classDefinition->getUserModification());
+        }
         Simple::log('updateLogger', '==========================================');
         Simple::log('updateLogger', 'Class ' . $classDefinition->getName() . ' has been updated');
         Simple::log('updateLogger', 'modification date: ' . date('Y-m-d H:i:s'));
-        Simple::log('updateLogger', 'user id: ' . $user->getId());
-        Simple::log('updateLogger', 'user email: ' . $user->getEmail());
+
+        if ($user) {
+            Simple::log('updateLogger', 'user id: ' . $user->getId());
+            Simple::log('updateLogger', 'user email: ' . $user->getEmail());
+        }
     }
 }

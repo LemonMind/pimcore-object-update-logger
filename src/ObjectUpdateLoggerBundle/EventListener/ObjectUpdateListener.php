@@ -25,16 +25,19 @@ class ObjectUpdateListener
             if ($container instanceof ContainerInterface) {
                 $config = $container->getParameter('lemonmind_object_update_logger');
                 $objectsToLog = $config['objectsToLog'];
-                $object = DataObject::getByPath($event->getObject());
 
                 if ($config['disableObjectLog']) {
                     return;
                 }
 
-                if (null === $objectsToLog) {
-                    $this->log($object);
-                } elseif (in_array($object->getClass()->getName(), $objectsToLog, true)) {
-                    $this->log($object);
+                $object = DataObject::getByPath($event->getObject()->getCurrentFullPath());
+
+                if ($object instanceof DataObject) {
+                    if (null === $objectsToLog) {
+                        $this->log($object);
+                    } elseif (in_array($object->getClass()->getName(), $objectsToLog, true)) {
+                        $this->log($object);
+                    }
                 }
             }
         }
@@ -136,7 +139,7 @@ class ObjectUpdateListener
                 $v2 = $lfd->getVersionPreview($keyData2);
 
                 if ($v1 !== $v2) {
-                    Simple::log('updateLogger', $lfd->getName() . ' (' . $language . '): ' . $v2 . ' -> ' . $v1);
+                    Simple::log('updateLogger', "$fieldName " . $lfd->getName() . " ($language): " . $v2 . ' -> ' . $v1);
                 }
             }
         }
@@ -192,7 +195,7 @@ class ObjectUpdateListener
                                 }
 
                                 if ($v1 !== $v2) {
-                                    Simple::log('updateLogger', $lfd->getName() . ' (' . $language . '): ' . $v2 . ' -> ' . $v1);
+                                    Simple::log('updateLogger', "$fieldName " . $lfd->getName() . ' (' . $language . '): ' . $v2 . ' -> ' . $v1);
                                 }
                             }
                         }
@@ -224,7 +227,7 @@ class ObjectUpdateListener
                         }
 
                         if ($v1 !== $v2) {
-                            Simple::log('updateLogger', $lfd->getName() . ': ' . $v2 . ' -> ' . $v1);
+                            Simple::log('updateLogger', "$fieldName " . $lfd->getName() . ': ' . $v2 . ' -> ' . $v1);
                         }
                     }
                 }
@@ -287,7 +290,7 @@ class ObjectUpdateListener
                             $v2 = $keyDef->getVersionPreview($keyData2);
 
                             if ($v1 !== $v2) {
-                                Simple::log('updateLogger', $keyGroupRelation->getName() . " ($language): " . $v2 . ' -> ' . $v1);
+                                Simple::log('updateLogger', "$fieldName " . $keyGroupRelation->getName() . " ($language): " . $v2 . ' -> ' . $v1);
                             }
                         }
                     }
@@ -307,6 +310,10 @@ class ObjectUpdateListener
 
         $currentFieldItems = null;
         $previousFieldItems = null;
+        $currentFieldDefinition = null;
+        $previousFieldDefinition = null;
+
+        $fieldKeys2 = null;
 
         $skipFieldItems2 = [];
         $ffkey1 = null;
@@ -333,6 +340,7 @@ class ObjectUpdateListener
                 }
 
                 foreach ($fieldKeys1 as $fkey => $fieldKey1) {
+                    $v1 = null;
                     $v2 = null;
                     $keyData2 = null;
                     $keyData1 = $fieldItem1->get($fieldKey1->getName());
@@ -383,12 +391,12 @@ class ObjectUpdateListener
         if (is_iterable($previousFieldItems) && count($previousFieldItems) > 0) {
             foreach ($previousFieldItems as $fkey2 => $fieldItem2) {
                 if (!in_array($fkey2, array_keys($skipFieldItems2), true)) {
+                    $fieldKeys1 = null;
                     $fieldKeys2 = $previousFieldDefinition[$fieldItem2->getType()]->getFieldDefinitions();
 
                     if (key_exists($fkey2, $currentFieldItems) && $fieldItem2->getType() == $currentFieldItems[$fkey2]->getType()) {
                         $ffkey1 = $currentFieldItems[$fkey2];
                         $fieldKeys1 = $currentFieldDefinition[$ffkey1->getType()]->getFieldDefinitions();
-                        $skipFieldItems2 = array_merge([$fkey1, $fkey1]);
                     }
 
                     foreach ($fieldKeys2 as $fkey => $fieldKey2) {
