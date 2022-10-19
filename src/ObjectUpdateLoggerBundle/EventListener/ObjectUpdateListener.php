@@ -25,16 +25,19 @@ class ObjectUpdateListener
             if ($container instanceof ContainerInterface) {
                 $config = $container->getParameter('lemonmind_object_update_logger');
                 $objectsToLog = $config['objectsToLog'];
-                $object = DataObject::getByPath($event->getObject());
 
                 if ($config['disableObjectLog']) {
                     return;
                 }
 
-                if (null === $objectsToLog) {
-                    $this->log($object);
-                } elseif (in_array($object->getClass()->getName(), $objectsToLog, true)) {
-                    $this->log($object);
+                $object = DataObject::getByPath($event->getObject()->getCurrentFullPath());
+
+                if ($object instanceof DataObject) {
+                    if (null === $objectsToLog) {
+                        $this->log($object);
+                    } elseif (in_array($object->getClass()->getName(), $objectsToLog, true)) {
+                        $this->log($object);
+                    }
                 }
             }
         }
@@ -90,7 +93,7 @@ class ObjectUpdateListener
                         } elseif ($definition instanceof DataObject\ClassDefinition\Data\Classificationstore) {
                             $this->classificationStore($definition, $currentObject, $previousObject, $fieldName, $validLanguages);
                         } elseif ($definition instanceof DataObject\ClassDefinition\Data\Fieldcollections) {
-                            $this->fieldCollection($currentObject, $previousObject, $fieldName);
+                            $this->fieldCollection($currentObject, $previousObject, $fieldName, $validLanguages);
                         } else {
                             $keyData1 = false !== $currentObject->getValueForFieldName($fieldName) ? $currentObject->getValueForFieldName($fieldName) : null;
                             $v1 = $definition->getVersionPreview($keyData1);
@@ -120,12 +123,11 @@ class ObjectUpdateListener
 
     private function localizedFields(
         DataObject\ClassDefinition\Data\Localizedfields $definition,
-        AbstractObject                                  $currentObject,
-        AbstractObject                                  $previousObject,
-        string                                          $fieldName,
-        array                                           $validLanguages
-    ): void
-    {
+        AbstractObject $currentObject,
+        AbstractObject $previousObject,
+        string $fieldName,
+        array $validLanguages
+    ): void {
         foreach ($validLanguages as $language) {
             foreach ($definition->getFieldDefinitions() as $lfd) {
                 $v1Container = $currentObject->getValueForFieldName($fieldName);
@@ -137,7 +139,7 @@ class ObjectUpdateListener
                 $v2 = $lfd->getVersionPreview($keyData2);
 
                 if ($v1 !== $v2) {
-                    Simple::log('updateLogger', $lfd->getName() . ' (' . $language . '): ' . $v2 . ' -> ' . $v1);
+                    Simple::log('updateLogger', "$fieldName " . $lfd->getName() . " ($language): " . $v2 . ' -> ' . $v1);
                 }
             }
         }
@@ -145,12 +147,11 @@ class ObjectUpdateListener
 
     private function objectBricks(
         DataObject\ClassDefinition\Data\Objectbricks $definition,
-        AbstractObject                               $currentObject,
-        AbstractObject                               $previousObject,
-        string                                       $fieldName,
-        array                                        $validLanguages
-    ): void
-    {
+        AbstractObject $currentObject,
+        AbstractObject $previousObject,
+        string $fieldName,
+        array $validLanguages
+    ): void {
         foreach ($definition->getAllowedTypes() as $asAllowedType) {
             $collectionDef = DataObject\Objectbrick\Definition::getByKey($asAllowedType);
 
@@ -194,7 +195,7 @@ class ObjectUpdateListener
                                 }
 
                                 if ($v1 !== $v2) {
-                                    Simple::log('updateLogger', $lfd->getName() . ' (' . $language . '): ' . $v2 . ' -> ' . $v1);
+                                    Simple::log('updateLogger', "$fieldName " . $lfd->getName() . ' (' . $language . '): ' . $v2 . ' -> ' . $v1);
                                 }
                             }
                         }
@@ -226,7 +227,7 @@ class ObjectUpdateListener
                         }
 
                         if ($v1 !== $v2) {
-                            Simple::log('updateLogger', $lfd->getName() . ': ' . $v2 . ' -> ' . $v1);
+                            Simple::log('updateLogger', "$fieldName " . $lfd->getName() . ': ' . $v2 . ' -> ' . $v1);
                         }
                     }
                 }
@@ -236,12 +237,11 @@ class ObjectUpdateListener
 
     private function classificationStore(
         DataObject\ClassDefinition\Data\Classificationstore $definition,
-        AbstractObject                                      $currentObject,
-        AbstractObject                                      $previousObject,
-        string                                              $fieldName,
-        array                                               $validLanguages
-    ): void
-    {
+        AbstractObject $currentObject,
+        AbstractObject $previousObject,
+        string $fieldName,
+        array $validLanguages
+    ): void {
         $storeDataCurrent = $currentObject->getValueForFieldName($fieldName);
         $storeDataPrevious = $previousObject->getValueForFieldName($fieldName);
 
@@ -290,7 +290,7 @@ class ObjectUpdateListener
                             $v2 = $keyDef->getVersionPreview($keyData2);
 
                             if ($v1 !== $v2) {
-                                Simple::log('updateLogger', $keyGroupRelation->getName() . " ($language): " . $v2 . ' -> ' . $v1);
+                                Simple::log('updateLogger', "$fieldName " . $keyGroupRelation->getName() . " ($language): " . $v2 . ' -> ' . $v1);
                             }
                         }
                     }
@@ -302,14 +302,22 @@ class ObjectUpdateListener
     private function fieldCollection(
         AbstractObject $currentObject,
         AbstractObject $previousObject,
-        string         $fieldName,
-    ): void
-    {
+        string $fieldName,
+        array $validLanguages
+    ): void {
         $currentFields = $currentObject->get($fieldName);
         $previousFields = $previousObject->get($fieldName);
 
         $currentFieldItems = null;
         $previousFieldItems = null;
+        $currentFieldDefinition = null;
+        $previousFieldDefinition = null;
+
+        $fieldKeys2 = null;
+
+        $skipFieldItems2 = [];
+        $ffkey1 = null;
+        $ffkey2 = null;
 
         if ($currentFields) {
             $currentFieldDefinition = $currentFields->getItemDefinitions();
@@ -332,18 +340,49 @@ class ObjectUpdateListener
                 }
 
                 foreach ($fieldKeys1 as $fkey => $fieldKey1) {
+                    $v1 = null;
                     $v2 = null;
                     $keyData2 = null;
                     $keyData1 = $fieldItem1->get($fieldKey1->getName());
-                    $v1 = $fieldKey1->getVersionPreview($keyData1);
 
-                    if ($ffkey2 && key_exists($fkey, $fieldKeys2)) {
-                        $keyData2 = $ffkey2->get($fieldKeys2[$fkey]->getName());
-                        $v2 = $fieldKey1->getVersionPreview($keyData2);
-                    }
+                    if ($fieldKey1 instanceof DataObject\ClassDefinition\Data\Localizedfields) {
+                        foreach ($validLanguages as $language) {
+                            foreach ($fieldKey1->getChildren() as $child) {
+                                $currentLocalizedValue = $keyData1->getLocalizedValue($child->getName(), $language);
 
-                    if ($v1 !== $v2) {
-                        Simple::log('updateLogger', "$fieldName " . $fieldKey1->getName() . ': ' . $v2 . ' -> ' . $v1);
+                                if (false !== $currentLocalizedValue) {
+                                    $v1 = $child->getVersionPreview($currentLocalizedValue);
+                                } else {
+                                    $currentLocalizedValue = null;
+                                }
+
+                                if ($ffkey2 && key_exists($fkey, $fieldKeys2)) {
+                                    $keyData2 = $ffkey2->get($fieldKeys2[$fkey]->getName());
+                                    $previousLocalizedValue = $keyData2->getLocalizedValue($child->getName(), $language);
+
+                                    if (false !== $previousLocalizedValue) {
+                                        $v2 = $child->getVersionPreview($previousLocalizedValue);
+                                    } else {
+                                        $previousLocalizedValue = null;
+                                    }
+                                }
+
+                                if ($v1 !== $v2) {
+                                    Simple::log('updateLogger', $fieldName . $fieldItem1->getIndex() . ' ' . $child->getName() . ' (' . $language . '): ' . $v2 . ' -> ' . $v1);
+                                }
+                            }
+                        }
+                    } else {
+                        $v1 = $fieldKey1->getVersionPreview($keyData1);
+
+                        if ($ffkey2 && key_exists($fkey, $fieldKeys2)) {
+                            $keyData2 = $ffkey2->get($fieldKeys2[$fkey]->getName());
+                            $v2 = $fieldKey1->getVersionPreview($keyData2);
+                        }
+
+                        if ($v1 !== $v2) {
+                            Simple::log('updateLogger', $fieldName . $fieldItem1->getIndex() . ' ' . $fieldKey1->getName() . ': ' . $v2 . ' -> ' . $v1);
+                        }
                     }
                 }
             }
@@ -352,12 +391,12 @@ class ObjectUpdateListener
         if (is_iterable($previousFieldItems) && count($previousFieldItems) > 0) {
             foreach ($previousFieldItems as $fkey2 => $fieldItem2) {
                 if (!in_array($fkey2, array_keys($skipFieldItems2), true)) {
+                    $fieldKeys1 = null;
                     $fieldKeys2 = $previousFieldDefinition[$fieldItem2->getType()]->getFieldDefinitions();
 
                     if (key_exists($fkey2, $currentFieldItems) && $fieldItem2->getType() == $currentFieldItems[$fkey2]->getType()) {
                         $ffkey1 = $currentFieldItems[$fkey2];
                         $fieldKeys1 = $currentFieldDefinition[$ffkey1->getType()]->getFieldDefinitions();
-                        $skipFieldItems2 = array_merge([$fkey1, $fkey1]);
                     }
 
                     foreach ($fieldKeys2 as $fkey => $fieldKey2) {
@@ -372,7 +411,7 @@ class ObjectUpdateListener
                         }
 
                         if ($v1 !== $v2) {
-                            Simple::log('updateLogger', "$fieldName " . $fieldKey2->getName() . ': ' . $v2 . ' -> ' . $v1);
+                            Simple::log('updateLogger', $fieldName . $fieldItem2->getIndex() . ' ' . $fieldKey2->getName() . ': ' . $v2 . ' -> ' . $v1);
                         }
                     }
                 }
