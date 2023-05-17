@@ -4,18 +4,22 @@ declare(strict_types=1);
 
 namespace Lemonmind\ObjectUpdateLoggerBundle\EventListener;
 
-use Pimcore;
+use Lemonmind\ObjectUpdateLoggerBundle\Service\LogService;
 use Pimcore\Event\Model\DataObject\ClassDefinitionEvent;
-use Pimcore\Log\Simple;
 use Pimcore\Model\User;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
-class ClassUpdateListener
+readonly class ClassUpdateListener
 {
+    public function __construct(
+        private LogService $logService,
+    ) {
+    }
+
     public function postUpdateClassDefinition(ClassDefinitionEvent $event): void
     {
-        if (Pimcore::inAdmin()) {
-            $container = Pimcore::getContainer();
+        if (\Pimcore::inAdmin()) {
+            $container = \Pimcore::getContainer();
 
             if ($container instanceof ContainerInterface) {
                 $config = $container->getParameter('lemonmind_object_update_logger');
@@ -42,13 +46,13 @@ class ClassUpdateListener
         if (is_int($classDefinition->getUserModification())) {
             $user = User::getById($classDefinition->getUserModification());
         }
-        Simple::log('updateLogger', '==========================================');
-        Simple::log('updateLogger', 'Class ' . $classDefinition->getName() . ' has been updated');
-        Simple::log('updateLogger', 'modification date: ' . date('Y-m-d H:i:s'));
+        $this->logService->log('updateLogger', '==========================================');
+        $this->logService->log('updateLogger', 'Class ' . $classDefinition->getName() . ' has been updated');
+        $this->logService->log('updateLogger', 'modification date: ' . date('Y-m-d H:i:s'));
 
         if ($user) {
-            Simple::log('updateLogger', 'user id: ' . $user->getId());
-            Simple::log('updateLogger', 'user email: ' . $user->getEmail());
+            $this->logService->log('updateLogger', 'user id: ' . $user->getId());
+            $this->logService->log('updateLogger', 'user email: ' . $user->getEmail());
         }
     }
 }

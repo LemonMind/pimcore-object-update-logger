@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 namespace Lemonmind\ObjectUpdateLoggerBundle\EventListener;
 
-use Pimcore;
+use Lemonmind\ObjectUpdateLoggerBundle\Service\LogService;
 use Pimcore\Event\Model\DataObjectEvent;
-use Pimcore\Log\Simple;
 use Pimcore\Model\DataObject;
 use Pimcore\Model\DataObject\AbstractObject;
 use Pimcore\Model\DataObject\Classificationstore\GroupConfig;
@@ -15,12 +14,17 @@ use Pimcore\Tool;
 use Pimcore\Twig\Extension\PimcoreObjectExtension;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
-class ObjectUpdateListener
+readonly class ObjectUpdateListener
 {
+    public function __construct(
+        private LogService $logService,
+    ) {
+    }
+
     public function postUpdate(DataObjectEvent $event): void
     {
-        if (Pimcore::inAdmin()) {
-            $container = Pimcore::getContainer();
+        if (\Pimcore::inAdmin()) {
+            $container = \Pimcore::getContainer();
 
             if ($container instanceof ContainerInterface) {
                 $config = $container->getParameter('lemonmind_object_update_logger');
@@ -78,11 +82,11 @@ class ObjectUpdateListener
                     $fields = $currentObject->getClass()->getFieldDefinitions();
 
                     if ($currentObject->getRealFullPath() !== $previousObject->getRealFullPath()) {
-                        Simple::log('updateLogger', 'path: ' . $previousObject->getRealFullPath() . ' -> ' . $currentObject->getRealFullPath());
+                        $this->logService->log('updateLogger', 'path: ' . $previousObject->getRealFullPath() . ' -> ' . $currentObject->getRealFullPath());
                     }
 
                     if ($currentObject->getPublished() !== $previousObject->getPublished()) {
-                        Simple::log('updateLogger', 'published: ' . $previousObject->getPublished() . ' -> ' . $currentObject->getPublished());
+                        $this->logService->log('updateLogger', 'published: ' . $previousObject->getPublished() . ' -> ' . $currentObject->getPublished());
                     }
 
                     foreach ($fields as $fieldName => $definition) {
@@ -102,7 +106,7 @@ class ObjectUpdateListener
                             $v2 = $definition->getVersionPreview($keyData2);
 
                             if ($v1 !== $v2) {
-                                Simple::log('updateLogger', "$fieldName: " . $v2 . ' -> ' . $v1);
+                                $this->logService->log('updateLogger', "$fieldName: " . $v2 . ' -> ' . $v1);
                             }
                         }
                     }
@@ -113,12 +117,12 @@ class ObjectUpdateListener
 
     private function defaultInformation(Version $currentVersion, AbstractObject $currentObject): void
     {
-        Simple::log('updateLogger', '==========================================');
-        Simple::log('updateLogger', 'object id: ' . $currentVersion->getData()->getId());
-        Simple::log('updateLogger', 'object link: ' . Tool::getHostname() . '/admin/login/deeplink?object_' . $currentObject->getId() . '_object');
-        Simple::log('updateLogger', 'modification date: ' . date('Y-m-d H:i:s'));
-        Simple::log('updateLogger', 'user id: ' . $currentVersion->getUser()->getId());
-        Simple::log('updateLogger', 'user email: ' . $currentVersion->getUser()->getEmail());
+        $this->logService->log('updateLogger', '==========================================');
+        $this->logService->log('updateLogger', 'object id: ' . $currentVersion->getData()->getId());
+        $this->logService->log('updateLogger', 'object link: ' . Tool::getHostname() . '/admin/login/deeplink?object_' . $currentObject->getId() . '_object');
+        $this->logService->log('updateLogger', 'modification date: ' . date('Y-m-d H:i:s'));
+        $this->logService->log('updateLogger', 'user id: ' . $currentVersion->getUser()->getId());
+        $this->logService->log('updateLogger', 'user email: ' . $currentVersion->getUser()->getEmail());
     }
 
     private function localizedFields(
@@ -139,7 +143,7 @@ class ObjectUpdateListener
                 $v2 = $lfd->getVersionPreview($keyData2);
 
                 if ($v1 !== $v2) {
-                    Simple::log('updateLogger', "$fieldName " . $lfd->getName() . " ($language): " . $v2 . ' -> ' . $v1);
+                    $this->logService->log('updateLogger', "$fieldName " . $lfd->getName() . " ($language): " . $v2 . ' -> ' . $v1);
                 }
             }
         }
@@ -195,7 +199,7 @@ class ObjectUpdateListener
                                 }
 
                                 if ($v1 !== $v2) {
-                                    Simple::log('updateLogger', "$fieldName " . $lfd->getName() . ' (' . $language . '): ' . $v2 . ' -> ' . $v1);
+                                    $this->logService->log('updateLogger', "$fieldName " . $lfd->getName() . ' (' . $language . '): ' . $v2 . ' -> ' . $v1);
                                 }
                             }
                         }
@@ -227,7 +231,7 @@ class ObjectUpdateListener
                         }
 
                         if ($v1 !== $v2) {
-                            Simple::log('updateLogger', "$fieldName " . $lfd->getName() . ': ' . $v2 . ' -> ' . $v1);
+                            $this->logService->log('updateLogger', "$fieldName " . $lfd->getName() . ': ' . $v2 . ' -> ' . $v1);
                         }
                     }
                 }
@@ -290,7 +294,7 @@ class ObjectUpdateListener
                             $v2 = $keyDef->getVersionPreview($keyData2);
 
                             if ($v1 !== $v2) {
-                                Simple::log('updateLogger', "$fieldName " . $keyGroupRelation->getName() . " ($language): " . $v2 . ' -> ' . $v1);
+                                $this->logService->log('updateLogger', "$fieldName " . $keyGroupRelation->getName() . " ($language): " . $v2 . ' -> ' . $v1);
                             }
                         }
                     }
@@ -368,7 +372,7 @@ class ObjectUpdateListener
                                 }
 
                                 if ($v1 !== $v2) {
-                                    Simple::log('updateLogger', $fieldName . $fieldItem1->getIndex() . ' ' . $child->getName() . ' (' . $language . '): ' . $v2 . ' -> ' . $v1);
+                                    $this->logService->log('updateLogger', $fieldName . $fieldItem1->getIndex() . ' ' . $child->getName() . ' (' . $language . '): ' . $v2 . ' -> ' . $v1);
                                 }
                             }
                         }
@@ -381,7 +385,7 @@ class ObjectUpdateListener
                         }
 
                         if ($v1 !== $v2) {
-                            Simple::log('updateLogger', $fieldName . $fieldItem1->getIndex() . ' ' . $fieldKey1->getName() . ': ' . $v2 . ' -> ' . $v1);
+                            $this->logService->log('updateLogger', $fieldName . $fieldItem1->getIndex() . ' ' . $fieldKey1->getName() . ': ' . $v2 . ' -> ' . $v1);
                         }
                     }
                 }
@@ -411,7 +415,7 @@ class ObjectUpdateListener
                         }
 
                         if ($v1 !== $v2) {
-                            Simple::log('updateLogger', $fieldName . $fieldItem2->getIndex() . ' ' . $fieldKey2->getName() . ': ' . $v2 . ' -> ' . $v1);
+                            $this->logService->log('updateLogger', $fieldName . $fieldItem2->getIndex() . ' ' . $fieldKey2->getName() . ': ' . $v2 . ' -> ' . $v1);
                         }
                     }
                 }
