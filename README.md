@@ -7,7 +7,12 @@ can monitor your class definition changes.
 
 ```
 composer require lemonmind/pimcore-object-update-logger
-bin/console pimcore:bundle:enable LemonmindObjectUpdateLoggerBundle
+```
+
+```php
+// config/bundles.php
+
+LemonmindObjectUpdateLoggerBundle::class => ['all' => true]
 ```
 
 You can specify which object/class would you like to log

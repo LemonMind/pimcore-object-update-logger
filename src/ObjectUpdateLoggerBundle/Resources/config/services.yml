@@ -2,7 +2,14 @@ services:
     _defaults:
         autowire: true
         autoconfigure: true
-        public: false
+        public: true
+
+    #
+    # SERVICES
+    #
+    Lemonmind\ObjectUpdateLoggerBundle\Service\:
+        resource: '../../Service/*'
+        lazy: true
 
     lemonmind.event_listener.object_update_listener:
         public: true
